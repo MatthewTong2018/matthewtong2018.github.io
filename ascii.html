@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Generator</title>
+    <style>
+        :root {
+            --bg-color: #0f0f12;
+            --text-color: #e0e0e0;
+            --accent-color: #64ffda;
+            --secondary-bg: #1e1e24;
+            --font-mono: 'Courier New', Courier, monospace;
+            --border-radius: 16px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 3rem 1rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--secondary-bg) 0%, var(--bg-color) 100%);
+        }
+
+        h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 3rem;
+            color: var(--accent-color);
+            letter-spacing: -0.05em;
+            text-shadow: 0 0 20px rgba(100, 255, 218, 0.2);
+        }
+
+        header p {
+            color: #8892b0;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto 3rem auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .controls {
+            background-color: var(--secondary-bg);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .upload-section {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        label.upload-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border: 2px dashed #3a3a45;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        label.upload-btn:hover {
+            border-color: var(--accent-color);
+            background: rgba(100, 255, 218, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        .upload-text {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.85rem;
+            color: #8892b0;
+            margin-top: 0.5rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .settings {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .settings-label {
+            display: flex;
+            justify-content: space-between;
+            color: #8892b0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            height: 6px;
+            background: #3a3a45;
+            border-radius: 3px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+        }
+
+        input[type="number"] {
+            width: 70px;
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid #3a3a45;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+            text-align: center;
+        }
+
+        .output-area {
+            background-color: #000;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            overflow: auto;
+            min-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .empty-state {
+            color: #444;
+            text-align: center;
+            font-style: italic;
+        }
+
+        pre {
+            font-family: var(--font-mono);
+            font-size: 8px;
+            line-height: 0.6;
+            color: var(--accent-color);
+            margin: 0;
+            white-space: pre;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            color: #8892b0;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            color: var(--accent-color);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="index.html" class="back-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back
+    </a>
+
+    <header>
+        <h1>ASCII Art Generator</h1>
+        <p>Transform your photos into stunning text art.</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+
+            <div class="upload-section">
+                <label class="upload-btn">
+                    <span class="upload-icon">📁</span>
+                    <span class="upload-text">Click to Upload Image</span>
+                    <span class="upload-subtext">Supports JPG, PNG, WEBP</span>
+                    <input type="file" id="imageInput" accept="image/*">
+                </label>
+            </div>
+
+            <div class="settings" id="settingsPanel"
+                style="opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                <div class="settings-label">
+                    <span>Detail Level</span>
+                    <span>Set Resolution</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" id="widthRange" min="20" max="1000" value="100">
+                    <input type="number" id="widthNumber" min="20" max="1000" value="100">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="output-area">
+            <div id="emptyState" class="empty-state">
+                <p>No image selected yet.</p>
+            </div>
+            <pre id="asciiOutput" style="display: none;"></pre>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const widthRange = document.getElementById('widthRange');
+        const widthNumber = document.getElementById('widthNumber');
+        const asciiOutput = document.getElementById('asciiOutput');
+        const emptyState = document.getElementById('emptyState');
+        const settingsPanel = document.getElementById('settingsPanel');
+
+        // Detailed ASCII ramp
+        const density = "Ñ@#W$9876543210?!abc;:+=-,._ ";
+
+        let currentImage = null;
+
+        // Debounce function to limit render calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debouncedRender = debounce(() => {
+            if (currentImage) renderAscii();
+        }, 100);
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        currentImage = img;
+                        // Enable settings
+                        settingsPanel.style.opacity = "1";
+                        settingsPanel.style.pointerEvents = "auto";
+                        // Show output
+                        emptyState.style.display = "none";
+                        asciiOutput.style.display = "block";
+
+                        renderAscii();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        widthRange.addEventListener('input', () => {
+            widthNumber.value = widthRange.value;
+            debouncedRender();
+        });
+
+        widthNumber.addEventListener('input', () => {
+            widthRange.value = widthNumber.value;
+            debouncedRender();
+        });
+
+        function renderAscii() {
+            if (!currentImage) return;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const width = parseInt(widthRange.value);
+            const charAspectRatio = 0.55;
+            const height = Math.floor(width * (currentImage.height / currentImage.width) * charAspectRatio);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.drawImage(currentImage, 0, 0, width, height);
+
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+
+            let htmlStr = "";
+
+            // Hardcoded defaults
+            const invert = true;
+
+            // Updated: Dynamic Font Scaling
+            const outputArea = document.querySelector('.output-area');
+            // Use clientWidth but subtract a safe padding buffer
+            const availableWidth = outputArea.clientWidth - 48;
+
+            // Calculate optimal font size
+            let fontSize = availableWidth / (width * 0.6);
+            if (fontSize > 16) fontSize = 16;
+            if (fontSize < 1) fontSize = 1;
+
+            // Set styles
+            asciiOutput.style.fontSize = `${fontSize}px`;
+            asciiOutput.style.lineHeight = `${fontSize}px`;
+            // Remove align-items center from output-area when showing big art
+            outputArea.style.alignItems = "flex-start";
+
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    const offset = (i * width + j) * 4;
+                    const r = data[offset];
+                    const g = data[offset + 1];
+                    const b = data[offset + 2];
+
+                    const avg = (r + g + b) / 3;
+
+                    let charIndex = Math.floor((avg / 255) * (density.length - 1));
+
+                    if (invert) {
+                        charIndex = density.length - 1 - charIndex;
+                    }
+
+                    const char = density[charIndex];
+
+                    let displayChar = char;
+                    if (char === '<') displayChar = '&lt;';
+                    if (char === '>') displayChar = '&gt;';
+                    if (char === '&') displayChar = '&amp;';
+                    if (char === ' ') displayChar = '&nbsp;';
+
+                    htmlStr += `<span style="color: rgb(${r},${g},${b})">${displayChar}</span>`;
+                }
+                htmlStr += "<br>";
+            }
+
+            asciiOutput.innerHTML = htmlStr;
+        }
+    </script>
+</body>
+
+</html>
