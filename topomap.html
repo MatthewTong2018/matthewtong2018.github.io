@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topological Map Maker</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .ui-panel h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            margin: 10px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .radio-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .radio-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-option label {
+            display: block;
+            text-align: center;
+            padding: 8px 0;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: #94a3b8;
+        }
+
+        .radio-option input[type="radio"]:checked+label {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid var(--panel-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .checkbox-container input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Go back link */
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="index.html" class="back-link">
+        &larr; Back to Portfolio
+    </a>
+
+    <div id="canvas-container">
+        <canvas id="topo-canvas"></canvas>
+    </div>
+
+    <div class="ui-panel">
+        <h1>Topological Map</h1>
+
+        <div class="control-group">
+            <label>Mode</label>
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" id="mode-high" name="brush-mode" value="high" checked>
+                    <label for="mode-high">Raise (High)</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="mode-low" name="brush-mode" value="low">
+                    <label for="mode-low">Lower (Low)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>
+                Brush Size
+                <span id="brush-size-val">50px</span>
+            </label>
+            <input type="range" id="brush-size" min="10" max="200" value="50">
+
+            <label>
+                Brush Intensity
+                <span id="brush-intensity-val">10%</span>
+            </label>
+            <input type="range" id="brush-intensity" min="1" max="100" value="10">
+        </div>
+
+        <div class="control-group">
+            <label>High Point Color</label>
+            <div class="color-picker-container">
+                <input type="color" id="high-color" value="#ef4444">
+                <span id="high-color-hex" style="font-family: monospace; font-size: 0.85rem;">#ef4444</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Low Point Color</label>
+            <div class="color-picker-container">
+                <input type="color" id="low-color" value="#3b82f6">
+                <span id="low-color-hex" style="font-family: monospace; font-size: 0.85rem;">#3b82f6</span>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="btn-clear" class="btn-secondary">Clear</button>
+            <button id="btn-save" class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Save Image
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('topo-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        // UI Elements
+        const highColorPicker = document.getElementById('high-color');
+        const lowColorPicker = document.getElementById('low-color');
+        const highColorHex = document.getElementById('high-color-hex');
+        const lowColorHex = document.getElementById('low-color-hex');
+        const brushSizeSlider = document.getElementById('brush-size');
+        const brushSizeVal = document.getElementById('brush-size-val');
+        const brushIntensitySlider = document.getElementById('brush-intensity');
+        const brushIntensityVal = document.getElementById('brush-intensity-val');
+        const modeHighRadio = document.getElementById('mode-high');
+        const btnClear = document.getElementById('btn-clear');
+        const btnSave = document.getElementById('btn-save');
+
+        // State
+        let width, height;
+        let heightMap = null;
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let needsRender = true;
+
+        // Config scaling down for performance (render resolution vs display resolution)
+        const RENDER_SCALE = 1;
+
+        // Constants for colors
+        let colorHigh = hexToRgb(highColorPicker.value);
+        let colorLow = hexToRgb(lowColorPicker.value);
+
+        // Initialize Canvas
+        function initApp() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Generate initial flat map (0.5)
+            resetMap();
+
+            // Set up event listeners
+            setupEventListeners();
+
+            // Start render loop
+            requestAnimationFrame(renderLoop);
+        }
+
+        function resizeCanvas() {
+            width = Math.floor(window.innerWidth * RENDER_SCALE);
+            height = Math.floor(window.innerHeight * RENDER_SCALE);
+            canvas.width = width;
+            canvas.height = height;
+
+            // Recreate heightmap if needed, preserving old data where possible
+            const oldMap = heightMap;
+            const oldW = heightMap ? Math.floor(window.innerWidth * RENDER_SCALE) : 0; // approximate old width
+
+            heightMap = new Float32Array(width * height);
+
+            if (oldMap) {
+                // Not preserving on resize for simplicity right now, just clear
+                heightMap.fill(0.5);
+            } else {
+                heightMap.fill(0.5);
+            }
+            needsRender = true;
+        }
+
+        function resetMap() {
+            if (heightMap) {
+                heightMap.fill(0.5);
+                needsRender = true;
+            }
+        }
+
+        // Color Utilities
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        // Drawing Logic
+        function drawBrush(x, y) {
+            x = Math.floor(x * RENDER_SCALE);
+            y = Math.floor(y * RENDER_SCALE);
+
+            const radius = parseInt(brushSizeSlider.value) * RENDER_SCALE;
+            const intensity = parseInt(brushIntensitySlider.value) / 100 * 0.1; // scale intensity
+            const isHigh = modeHighRadio.checked;
+
+            const radiusSq = radius * radius;
+            const minX = Math.max(0, x - radius);
+            const maxX = Math.min(width - 1, x + radius);
+            const minY = Math.max(0, y - radius);
+            const maxY = Math.min(height - 1, y + radius);
+
+            for (let cy = minY; cy <= maxY; cy++) {
+                for (let cx = minX; cx <= maxX; cx++) {
+                    const dx = cx - x;
+                    const dy = cy - y;
+                    const distSq = dx * dx + dy * dy;
+
+                    if (distSq <= radiusSq) {
+                        const dist = Math.sqrt(distSq);
+                        // Smooth falloff (cosine)
+                        const falloff = (Math.cos(Math.PI * dist / radius) + 1) / 2;
+
+                        const idx = cy * width + cx;
+                        const change = falloff * intensity;
+
+                        if (isHigh) {
+                            heightMap[idx] = Math.min(1.0, heightMap[idx] + change);
+                        } else {
+                            heightMap[idx] = Math.max(0.0, heightMap[idx] - change);
+                        }
+                    }
+                }
+            }
+            needsRender = true;
+        }
+
+        // Connect dots between mouse events for smooth lines
+        function interpolateDrawing(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const radius = parseInt(brushSizeSlider.value) * RENDER_SCALE;
+
+            // Draw at intervals
+            const step = Math.max(1, radius / 4);
+
+            if (dist < step) {
+                drawBrush(x2, y2);
+                return;
+            }
+
+            for (let d = 0; d <= dist; d += step) {
+                const t = d / dist;
+                const tx = x1 + dx * t;
+                const ty = y1 + dy * t;
+                drawBrush(tx, ty);
+            }
+        }
+
+        // Rendering logic
+        function renderLoop() {
+            if (needsRender) {
+                renderMap();
+                needsRender = false;
+            }
+            requestAnimationFrame(renderLoop);
+        }
+
+        function renderMap() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            const showContours = true;
+
+            const r1 = colorLow.r, g1 = colorLow.g, b1 = colorLow.b;
+            const r2 = colorHigh.r, g2 = colorHigh.g, b2 = colorHigh.b;
+
+            for (let i = 0; i < heightMap.length; i++) {
+                const h = heightMap[i];
+                const pixelIdx = i * 4;
+
+                // Gradient interpolation
+                let r = r1 + (r2 - r1) * h;
+                let g = g1 + (g2 - g1) * h;
+                let b = b1 + (b2 - b1) * h;
+
+                // Add contour lines
+                if (showContours) {
+                    // Lines at intervals of 0.05 height
+                    const contourVal = (h * 20) % 1;
+                    // Make a sharp line when contourVal is close to 0
+                    if (contourVal < 0.05 || contourVal > 0.95) {
+                        // Darken slightly for contour
+                        r *= 0.8;
+                        g *= 0.8;
+                        b *= 0.8;
+                    }
+                    // Thicker major contour lines
+                    if ((h * 10) % 1 < 0.02 || (h * 10) % 1 > 0.98) {
+                        r *= 0.6;
+                        g *= 0.6;
+                        b *= 0.6;
+                    }
+                }
+
+                data[pixelIdx] = r;
+                data[pixelIdx + 1] = g;
+                data[pixelIdx + 2] = b;
+                data[pixelIdx + 3] = 255; // Alpha
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Event Listeners setup
+        function setupEventListeners() {
+            // Mouse drawing
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                drawBrush(lastX, lastY);
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDrawing = false;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDrawing) {
+                    const currentX = e.clientX;
+                    const currentY = e.clientY;
+                    interpolateDrawing(lastX, lastY, currentX, currentY);
+                    lastX = currentX;
+                    lastY = currentY;
+                }
+            });
+
+            // Touch drawing (mobile support)
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent scrolling
+                isDrawing = true;
+                const touch = e.touches[0];
+                lastX = touch.clientX;
+                lastY = touch.clientY;
+                drawBrush(lastX, lastY);
+            }, { passive: false });
+
+            window.addEventListener('touchend', () => {
+                isDrawing = false;
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (isDrawing) {
+                    const touch = e.touches[0];
+                    const currentX = touch.clientX;
+                    const currentY = touch.clientY;
+                    interpolateDrawing(lastX, lastY, currentX, currentY);
+                    lastX = currentX;
+                    lastY = currentY;
+                }
+            }, { passive: false });
+
+            // UI Events
+            highColorPicker.addEventListener('input', (e) => {
+                highColorHex.textContent = e.target.value;
+                colorHigh = hexToRgb(e.target.value);
+                needsRender = true;
+            });
+
+            lowColorPicker.addEventListener('input', (e) => {
+                lowColorHex.textContent = e.target.value;
+                colorLow = hexToRgb(e.target.value);
+                needsRender = true;
+            });
+
+            brushSizeSlider.addEventListener('input', (e) => {
+                brushSizeVal.textContent = e.target.value + 'px';
+            });
+
+            brushIntensitySlider.addEventListener('input', (e) => {
+                brushIntensityVal.textContent = e.target.value + '%';
+            });
+
+            btnClear.addEventListener('click', resetMap);
+
+            btnSave.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = 'topological-map.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // Start
+        initApp();
+    </script>
+</body>
+
+</html>
