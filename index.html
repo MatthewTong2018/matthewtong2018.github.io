@@ -1,11 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Projects</title>
     <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --card-bg: white;
+            --card-hover-bg: #ffffff;
+            --card-border: #e1e4e8;
+            --heading-color: #2c3e50;
+            --subtitle-color: #7f8c8d;
+            --border-primary: #3498db;
+            --link-color: #3498db;
+            --status-active-bg: #e8f5e9;
+            --status-active-text: #2e7d32;
+            --status-planning-bg: #fff3e0;
+            --status-planning-text: #e65100;
+            --status-completed-bg: #e3f2fd;
+            --status-completed-text: #1565c0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-hover-color: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #e5e5e5;
+            --card-bg: #2a2a2a;
+            --card-hover-bg: #333333;
+            --card-border: #404040;
+            --heading-color: #ffffff;
+            --subtitle-color: #a3a3a3;
+            --border-primary: #666666;
+            --link-color: #d4d4d4;
+            --status-active-bg: rgba(74, 222, 128, 0.15);
+            --status-active-text: #4ade80;
+            --status-planning-bg: rgba(251, 146, 60, 0.15);
+            --status-planning-text: #fb923c;
+            --status-completed-bg: rgba(156, 163, 175, 0.15);
+            --status-completed-text: #9ca3af;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --shadow-hover-color: rgba(0, 0, 0, 0.7);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,52 +55,206 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: #f5f5f5;
+            color: var(--text-color);
+            background: var(--bg-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            text-decoration: underline;
+            color: var(--heading-color);
+        }
+
+
+        /* Nav & Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            z-index: 1000;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
+        }
+
+        .hero {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            background: linear-gradient(135deg, var(--bg-color) 0%, var(--card-bg) 100%);
+        }
+
+        #heroCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            /* Keeps canvas strictly behind text, but inside .hero */
+        }
+
+        .welcome-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--heading-color);
+            text-align: center;
+            z-index: 5;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInWelcome 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.5s;
+            text-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        @keyframes fadeInWelcome {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            font-size: 1.2rem;
+            color: var(--subtitle-color);
+            animation: bounce 2s infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-20px);
+            }
+
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .container-wrapper {
+            position: relative;
+            z-index: 10;
+            margin-top: 100vh;
+            background: var(--bg-color);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 1s ease-out, transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            z-index: 10;
+        }
+
+        .container.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         header {
-            background: white;
+            background: var(--card-bg);
             padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px var(--shadow-color);
             margin-bottom: 30px;
+            transition: background-color 0.3s ease, box-shadow 0.3s;
         }
 
         h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            color: #2c3e50;
+            color: var(--heading-color);
         }
 
         .subtitle {
             font-size: 1.2em;
-            color: #7f8c8d;
+            color: var(--subtitle-color);
         }
 
         .section {
-            background: white;
+            background: var(--card-bg);
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            margin-bottom: 30px;
+            transition: background-color 0.3s ease, box-shadow 0.3s;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .section h2 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #3498db;
+            color: var(--heading-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-primary);
             padding-bottom: 10px;
         }
 
         .project {
             margin-bottom: 30px;
+            padding: 24px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            background: var(--card-bg);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s, background-color 0.3s, border-color 0.3s;
+        }
+
+        .project:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 20px var(--shadow-hover-color);
+            background: var(--card-hover-bg);
+            border-color: var(--border-primary);
         }
 
         .project:last-child {
@@ -68,239 +262,559 @@
         }
 
         .project h3 {
-            color: #2980b9;
+            color: var(--link-color);
             margin-bottom: 8px;
+            border-bottom: none;
+        }
+
+        .project strong {
+            color: var(--text-color);
         }
 
         .project-status {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 0.85em;
             font-weight: 600;
             margin-left: 10px;
         }
 
         .status-active {
-            background: #e8f5e9;
-            color: #2e7d32;
+            background: var(--status-active-bg);
+            color: var(--status-active-text);
         }
 
         .status-planning {
-            background: #fff3e0;
-            color: #e65100;
+            background: var(--status-planning-bg);
+            color: var(--status-planning-text);
         }
 
         .status-completed {
-            background: #e3f2fd;
-            color: #1565c0;
+            background: var(--status-completed-bg);
+            color: var(--status-completed-text);
         }
 
         .project p {
-            color: #555;
-            margin-top: 8px;
+            color: var(--subtitle-color);
+            margin-top: 10px;
         }
 
         .project-date {
             font-size: 1em;
-            /* Smaller relative to H3 */
-            color: #7f8c8d;
+            color: var(--subtitle-color);
             margin-left: 10px;
             font-weight: normal;
-            /* Don't bold like the title */
             vertical-align: middle;
         }
 
-        .links {
-            margin-top: 20px;
-        }
-
         .links a {
-            color: #3498db;
-            text-decoration: none;
             margin-right: 15px;
-        }
-
-        .links a:hover {
-            text-decoration: underline;
+            font-weight: 600;
         }
 
         footer {
             text-align: center;
             padding: 20px;
-            color: #7f8c8d;
+            color: var(--subtitle-color);
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>Matthew Tong</h1>
-            <p class="subtitle">Projects, Ideas, Progress</p>
-        </header>
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+        🌙
+    </button>
 
-        <div class="section">
-            <h2>Completed</h2>
-            <div class="project">
-                <h3>
-                    Hacker News Podcast
-                    <span class="project-status status-completed">On Pause</span>
-                    <span class="project-date">2024/04/30- 2025/3/27</span>
-                </h3>
-                <p>Podcast covering the top articles on Hacker News.</p>
-                <p><strong>Tech: AI Audio Generation, Automation</strong></p>
-                <p>
-                    <a href="https://open.spotify.com/show/6BvRfWZDtiO3yEd8SHpDAJ?si=7f154aee556d48d6"
-                        target="_blank">Spotify Podcast</a>
-                </p>
-            </div>
+    <div class="hero">
 
-            <div class="project">
-                <h3>
-                    YouTube Channel
-                    <span class="project-status status-completed">Completed</span>
-                    <span class="project-date">2023/11/19 - 2024/1/15</span>
-                </h3>
-                <p>Created Youtube series analyzing the open source code of Now In Android. I then created an app
-                    imitating the UI of Now In Android, called Now In Hacker News, which is a mobile app for Hacker
-                    News.</p>
-                <p><strong>Tech: Video Production, OBS</strong></p>
-                <p>
-                    <a href="https://www.youtube.com/@DissectingNowInAndroid">Channel &rarr;</a>
-                </p>
-            </div>
-
-            <div class="project">
-                <h3>
-                    Now In Android App
-                    <span class="project-status status-completed">Completed</span>
-                    <span class="project-date">2023/10/04 - 2024/1/15</span>
-                </h3>
-                <p>Created an app imitating the UI of Now In Android, called Now In Hacker News, which is a mobile app
-                    for Hacker News. Is no longer accesible due to updates software updates.</p>
-                <p><strong>Tech: Android, Kotlin, Jetpack Compose</strong></p>
-                <p>
-                    <a href="hackernews.html">Project Gallery &rarr;</a>
-                </p>
-            </div>
-
-            <div class="project">
-                <h3>
-                    Physics Ballpit
-                    <span class="project-status status-completed">Completed</span>
-                    <span class="project-date">2025/12/20 - 2025/12/22</span>
-                </h3>
-                <p>Made a little physics based page where you can control the physics of a ball pit.</p>
-                <p><strong>Tech: HTML5 Canvas, Matter.js Physics Engine</strong></p>
-                <p>
-                    <a href="ballpit.html">Ballpit &rarr;</a>
-                </p>
-            </div>
-
-            <div class="project">
-                <h3>
-                    Flappy Bird Replica
-                    <span class="project-status status-completed">Completed</span>
-                    <span class="project-date">2025/12/23</span>
-                </h3>
-                <p>Classic pixel-art replica of the famous Flappy Bird game built from scratch.</p>
-                <p><strong>Tech: HTML5 Canvas, Pure JavaScript</strong></p>
-                <p>
-                    <a href="flappybird.html">Play Game &rarr;</a>
-                </p>
-            </div>
-
-            <div class="project">
-                <h3>
-                    ASCII Art Generator
-                    <span class="project-status status-completed">Completed</span>
-                    <span class="project-date">2026/02/14</span>
-                </h3>
-                <p>Convert your images into beautiful ASCII art with adjustable resolution and colors.</p>
-                <p><strong>Tech: HTML5, Canvas, JavaScript</strong></p>
-                <p>
-                    <a href="ascii.html">Generate Art &rarr;</a>
-                </p>
-            </div>
-
-            <div class="project">
-                <h3>
-                    Topological Map Maker
-                    <span class="project-status status-completed">Completed</span>
-                    <span class="project-date">2026/03/02</span>
-                </h3>
-                <p>Create beautiful interactive topological maps customized with your colors and brushes.</p>
-                <p><strong>Tech: HTML5, Canvas, JavaScript</strong></p>
-                <p>
-                    <a href="topomap.html">Create Map &rarr;</a>
-                </p>
-            </div>
-
+        <canvas id="heroCanvas"></canvas>
+        <div class="welcome-text">
+            Matthew Tong
         </div>
-
-        <div class="section">
-            <h2>Currently Building</h2>
-
-            <div class="project">
-                <h3>
-                    AI Powered Calorie Tracking.
-                    <span class="project-status status-active">Active</span>
-                    <span class="project-date">2025/7/9 - Present</span>
-                </h3>
-                <p>
-                    Building an AI-driven calorie tracking application, that uses gemini to determine the caloric
-                    value
-                    of food items.
-                </p>
-                <p><strong>Tech: Node.js, Next.js, Google Firebase, Google Genkit (AI), Stripe, Tailwind
-                        CSS</strong>
-                </p>
-                <p>
-                    <a href="https://cal-track.com" target="_blank">Caltrack</a>
-                </p>
-            </div>
-
-            <div class="project">
-                <h3>
-                    Stock Tracker
-                    <span class="project-status status-active">Active</span>
-                    <span class="project-date">2026/1/4 - Present</span>
-                </h3>
-                <p>
-                    Stock tracker app/website using Google Sheets as the backend.
-                </p>
-                <p><strong>Tech: Java, Google Sheets</strong></p>
-            </div>
+        <div class="scroll-indicator">
+            <span>Scroll Down to Projects</span>
+            <span>⬇️</span>
         </div>
+    </div>
 
-        <div class="section">
-            <h2>Planning</h2>
+    <div class="container-wrapper">
+        <div class="container">
+            <header>
+                <h1>Matthew Tong</h1>
+                <p class="subtitle">Projects, Ideas, Progress</p>
+            </header>
 
-            <div class="project">
-                <h3>
-                    Marvel Rivals VOD Review tool
-                    <span class="project-status status-planning">Planning</span>
-                </h3>
-                <p>
-                    Building an AI-powered tool to analyze Marvel Rivals gameplay footage. The goal is to provide
-                    automated coaching by identifying positioning mistakes, missed opportunities, and strategic
-                    insights
-                    from uploaded VOD clips.
-                </p>
-                <p><strong>Tech: TBD</strong>
-                </p>
+            <div class="section">
+                <h2>Completed</h2>
+                <div class="project">
+                    <h3>
+                        Topological Map Maker
+                        <span class="project-status status-completed">Completed</span>
+                        <span class="project-date">2026/03/02</span>
+                    </h3>
+                    <p>Create beautiful interactive topological maps customized with your colors and brushes.</p>
+                    <p><strong>Tech: HTML5, Canvas, JavaScript</strong></p>
+                    <p>
+                        <a href="topomap.html">Create Map &rarr;</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        ASCII Art Generator
+                        <span class="project-status status-completed">Completed</span>
+                        <span class="project-date">2026/02/14</span>
+                    </h3>
+                    <p>Convert your images into beautiful ASCII art with adjustable resolution and colors.</p>
+                    <p><strong>Tech: HTML5, Canvas, JavaScript</strong></p>
+                    <p>
+                        <a href="ascii.html">Generate Art &rarr;</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        Flappy Bird Replica
+                        <span class="project-status status-completed">Completed</span>
+                        <span class="project-date">2025/12/23</span>
+                    </h3>
+                    <p>Classic pixel-art replica of the famous Flappy Bird game built from scratch.</p>
+                    <p><strong>Tech: HTML5 Canvas, Pure JavaScript</strong></p>
+                    <p>
+                        <a href="flappybird.html">Play Game &rarr;</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        Physics Ballpit
+                        <span class="project-status status-completed">Completed</span>
+                        <span class="project-date">2025/12/20 - 2025/12/22</span>
+                    </h3>
+                    <p>Made a little physics based page where you can control the physics of a ball pit.</p>
+                    <p><strong>Tech: HTML5 Canvas, Matter.js Physics Engine</strong></p>
+                    <p>
+                        <a href="ballpit.html">Ballpit &rarr;</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        YouTube Channel
+                        <span class="project-status status-completed">Completed</span>
+                        <span class="project-date">2023/11/19 - 2024/1/15</span>
+                    </h3>
+                    <p>Created Youtube series analyzing the open source code of Now In Android. I then created an app
+                        imitating the UI of Now In Android, called Now In Hacker News, which is a mobile app for Hacker
+                        News.</p>
+                    <p><strong>Tech: Video Production, OBS</strong></p>
+                    <p>
+                        <a href="https://www.youtube.com/@DissectingNowInAndroid">Channel &rarr;</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        Now In Android App
+                        <span class="project-status status-completed">Completed</span>
+                        <span class="project-date">2023/10/04 - 2024/1/15</span>
+                    </h3>
+                    <p>Created an app imitating the UI of Now In Android, called Now In Hacker News, which is a mobile
+                        app
+                        for Hacker News. Is no longer accesible due to updates software updates.</p>
+                    <p><strong>Tech: Android, Kotlin, Jetpack Compose</strong></p>
+                    <p>
+                        <a href="hackernews.html">Project Gallery &rarr;</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        Hacker News Podcast
+                        <span class="project-status status-completed">On Pause</span>
+                        <span class="project-date">2024/04/30- 2025/3/27</span>
+                    </h3>
+                    <p>Podcast covering the top articles on Hacker News.</p>
+                    <p><strong>Tech: AI Audio Generation, Automation</strong></p>
+                    <p>
+                        <a href="https://open.spotify.com/show/6BvRfWZDtiO3yEd8SHpDAJ?si=7f154aee556d48d6"
+                            target="_blank">Spotify Podcast</a>
+                    </p>
+                </div>
+
             </div>
-        </div>
+
+            <div class="section">
+                <h2>Currently Building</h2>
+
+                <div class="project">
+                    <h3>
+                        AI Powered Calorie Tracking.
+                        <span class="project-status status-active">Active</span>
+                        <span class="project-date">2025/7/9 - Present</span>
+                    </h3>
+                    <p>
+                        Building an AI-driven calorie tracking application, that uses gemini to determine the caloric
+                        value
+                        of food items.
+                    </p>
+                    <p><strong>Tech: Node.js, Next.js, Google Firebase, Google Genkit (AI), Stripe, Tailwind
+                            CSS</strong>
+                    </p>
+                    <p>
+                        <a href="https://cal-track.com" target="_blank">Caltrack</a>
+                    </p>
+                </div>
+
+                <div class="project">
+                    <h3>
+                        Stock Tracker
+                        <span class="project-status status-active">Active</span>
+                        <span class="project-date">2026/1/4 - Present</span>
+                    </h3>
+                    <p>
+                        Stock tracker app/website using Google Sheets as the backend.
+                    </p>
+                    <p><strong>Tech: Java, Google Sheets</strong></p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Planning</h2>
+
+                <div class="project">
+                    <h3>
+                        Marvel Rivals VOD Review tool
+                        <span class="project-status status-planning">Planning</span>
+                    </h3>
+                    <p>
+                        Building an AI-powered tool to analyze Marvel Rivals gameplay footage. The goal is to provide
+                        automated coaching by identifying positioning mistakes, missed opportunities, and strategic
+                        insights
+                        from uploaded VOD clips.
+                    </p>
+                    <p><strong>Tech: TBD</strong>
+                    </p>
+                </div>
+            </div>
 
 
 
-        <div class="section links">
-            <h2>Connect</h2>
-            <a href="https://github.com/matthewtong2018" target="_blank">GitHub</a>
+            <div class="section links">
+                <h2>Connect</h2>
+                <a href="https://github.com/matthewtong2018" target="_blank">GitHub</a>
+            </div>
+
         </div>
 
     </div>
+    <script>
+        // Theme Toggle Logic
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Check for saved theme preference or OS preference
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = '☀️';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            themeToggle.style.transform = 'scale(1.2) rotate(360deg)';
+            setTimeout(() => {
+                themeToggle.style.transform = '';
+            }, 300);
+        });
+
+        // Intersection Observer for Scroll Animations
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target); // Optional: stop observing once visible
+                }
+            });
+        }, observerOptions);
+
+        // Observe container and sections
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.container, .section').forEach(el => {
+                observer.observe(el);
+            });
+        });
+
+
+        // Detailed Segmented ASCII Canvas Dragon
+        const canvas = document.getElementById('heroCanvas');
+        const ctx = canvas.getContext('2d');
+        const heroSection = document.querySelector('.hero');
+
+        let width = canvas.width = heroSection.clientWidth;
+        let height = canvas.height = heroSection.clientHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = heroSection.clientWidth;
+            height = canvas.height = heroSection.clientHeight;
+        });
+
+        function getDragonColor() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--link-color').trim();
+        }
+
+        const rawParts = [
+            ".", "...", ".....", ".@#%.", ":@#&%@:", ":@#ooo%&:",
+            "8@:#%&:88", "Y@#%&?=@P", "d@#%&?=@#%b", "d@#\"&?=@#\"%&b", "d@P %&?=@ Y&b",
+            "d@' %&?=@ `#b", "d@  %&?=@  &b", "@'  %&?=@  `%", "'   %&?=@   '",
+            "&?=@#", ":%&?=@:", "@#%&?=@", "d@#%&?=@b", "%&?=@#%&?", ":@#%&?=@#%&:",
+            "@#%&?=@#%&?", "%&?=@#%&?=@", "#%&?=@#%&?=",
+            ",o  @#%&?=@#%&=  o,", "d@#  %&?=@#%&?=@  #%b", "Y@#  %&?=@#%&?=@  &%P", "\"\"  @#%&?=@#%&?  \"\"",
+            "d@#%&?=@#%&?b", "@#%&?=@#%&?=@", "d%&?=@#%&?=@#%b",
+            ",d@#%&?=@#%&?=@#%&b,", ",@#%&?=@#%&?=@#%&?=@,", "@#%&?=@#%&?=@#%&?=@#%", "%&?=@#%&?=@#%&?=@#%&?=@",
+            "d@b @#%&?=@#%&?=@#%&?=@#% d&b", "d@#P %&?=@#%&?=@#%&?=@#% Y&%b",
+            "d@#P  @#%&?=@#%&?=@#%&?=@  Y%&b", "d@#P   Y%&?=@#%&?=@#%&?=@#P   Y#%b",
+            "d@P     \"@#%&?=@#%&?=@#%&?\"     Y#b", "@P       `%&?=@#%&?=@#%&?'       Y&",
+            "Y          Y@#%&?=@#%&?=@P          P", "'           \"\"%&?=@#%&?\"\"            '",
+            "8@#%&?=@#%&?8", ":8#%&?=@#%&?88:", "8%&?=@#%&?=@8", "8&?=@#%&?=@#8", "d88?=@#%&?=@88b",
+            "88@#%&?=@#%&8", ":8#%&?=@#%&?=@:", "8%&?=@#%&?=@8", "8&?=@#%&?=@#8", "d88?=@#%&?=@88b",
+            "88@#%&?=@#%&8", ":8#%&?=@#%&?=@:", "8%&?=@#%&?=@8", "8&?=@#%&?=@#8", "d88?=@#%&?=@88b",
+            "88@#%&?=@#%&8", ":8#%&?=@#%&?=@:", "8%&?=@#%&?=@8", "8&?=@#%&?=@#8", "d88?=@#%&?=@88b",
+            ",o  8@#%&?=@#  o,", "d88  8#%&?=@#%  88b", "Y88  8%&?=@#%&  88P", "\"\"  8&?=@#%&?  \"\"",
+            "88@#%&?=@#8", ":8#%&?=@#%&?:", "8%&?=@#%&?8", "8&?=@#%&?=@", "d8?=@#%&?=@8b",
+            "88@#%&?=@", ":8#%&?=@#:", "8%&?=@#%&", "d8?=@#%&?8b", "8@#%&?=", "8#%&?=@",
+            ":8%&?=@#:", "d8?=@#%8b", "8@#%&", "8#%&?", ":8%&?:", "8@8", "8#8", ":8%8:",
+            "8", "8", "d8b", "d8%8b", "d88@88b", "Y88#88P", "Y8&8P", "Y8P", "Y"
+        ];
+
+        const maxLength = Math.max(...rawParts.map(p => p.length));
+        const dragonParts = rawParts.map(p => {
+            const padLen = maxLength - p.length;
+            const left = Math.floor(padLen / 2);
+            const right = padLen - left;
+            return " ".repeat(left) + p + " ".repeat(right);
+        });
+
+        const numSegments = dragonParts.length;
+        const segmentLength = 5; // Very tight distance for solid texture
+
+        let segments = [];
+        let startX = width + 500;
+        let startY = height / 2;
+        for (let i = 0; i < numSegments; i++) {
+            // Pre-stretch the dragon off-screen so it glides in naturally instead of slurping into existence
+            segments.push({ x: startX + i * segmentLength, y: startY, angle: Math.PI });
+        }
+
+        let headPos = { x: startX, y: startY };
+        let headAngle = Math.PI; // Face left initially
+        let wanderAngle = Math.PI;
+
+        const cloudArts = [
+            "  .--.  \n (    ) \n(_.__._)",
+            "   _  _   \n  ( `   )_ \n (    )    )\n(_   (_ .  _)_)",
+            "    .--.    \n  .(    ).  \n (_.____._) ",
+            "      _     \n    (   )   \n   (     )  \n  (_______) ",
+            " .--.       \n(    ) .--. \n(_.__.((    )\n      (_.__._)"
+        ];
+
+        let clouds = [];
+        for (let i = 0; i < 5; i++) {
+            clouds.push({
+                x: (width / 5) * i + (Math.random() * (width / 5)), // Staggered grid placement
+                y: Math.random() * height,
+                vx: (Math.random() + 0.5) * 0.3,
+                art: cloudArts[i].split('\n')
+            });
+        }
+
+        let birds = [];
+        for (let i = 0; i < 12; i++) {
+            birds.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: -(Math.random() * 1.5 + 0.5),
+                flapSpeed: Math.random() * 200 + 100
+            });
+        }
+
+        function updateKinematics() {
+            // 1. Wander force: smooth, long curves
+            wanderAngle += (Math.random() - 0.5) * 0.15;
+            let desiredX = Math.cos(wanderAngle) * 2;
+            let desiredY = Math.sin(wanderAngle) * 2;
+
+            // 2. Center Gravity: Gently pull the dragon back to the center of the screen
+            // so it spends the majority of its time interacting with the hero section.
+            let cdx = (width / 2) - headPos.x;
+            let cdy = (height / 2) - headPos.y;
+            let cdistSq = cdx * cdx + cdy * cdy;
+            if (cdistSq > 0) {
+                let cdist = Math.sqrt(cdistSq);
+                desiredX += (cdx / cdist) * 0.5; // Soft pull factor
+                desiredY += (cdy / cdist) * 0.5;
+            }
+
+            // 3. Self Avoidance (Prevents dragon from crossing its own body)
+            for (let i = 25; i < numSegments; i += 4) {
+                let dx = headPos.x - segments[i].x;
+                let dy = headPos.y - segments[i].y;
+                let distSq = dx * dx + dy * dy;
+                // Strong push away if within 60px radius of rear body sections
+                if (distSq < 3600 && distSq > 0) {
+                    let dist = Math.sqrt(distSq);
+                    desiredX += (dx / dist) * (60 - dist) * 0.08;
+                    desiredY += (dy / dist) * (60 - dist) * 0.08;
+                }
+            }
+
+            // Calculate final steering heading
+            let targetAngle = Math.atan2(desiredY, desiredX);
+            let diff = targetAngle - headAngle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+
+            // Limit turn speed for smooth snake motion
+            headAngle += Math.sign(diff) * Math.min(Math.abs(diff), 0.08);
+
+            const speed = 2.0;
+            headPos.x += Math.cos(headAngle) * speed;
+            headPos.y += Math.sin(headAngle) * speed;
+
+            // Toroidal Screen Wrap (Seamless looping)
+            const spanX = width + 400;
+            const spanY = height + 400;
+
+            if (headPos.x < -200) { headPos.x += spanX; }
+            if (headPos.x > width + 200) { headPos.x -= spanX; }
+            if (headPos.y < -200) { headPos.y += spanY; }
+            if (headPos.y > height + 200) { headPos.y -= spanY; }
+
+            segments[0].x = headPos.x;
+            segments[0].y = headPos.y;
+            segments[0].angle = headAngle;
+
+            // True Toroidal Inverse Kinematics for the string
+            for (let i = 1; i < numSegments; i++) {
+                let current = segments[i];
+                let prev = segments[i - 1];
+
+                let adx = prev.x - current.x;
+                let ady = prev.y - current.y;
+
+                // Adjust dx/dy to take the shortest path across the screen seam
+                if (Math.abs(adx) > spanX / 2) adx -= Math.sign(adx) * spanX;
+                if (Math.abs(ady) > spanY / 2) ady -= Math.sign(ady) * spanY;
+
+                let angle = Math.atan2(ady, adx);
+
+                current.x = prev.x - Math.cos(angle) * segmentLength;
+                current.y = prev.y - Math.sin(angle) * segmentLength;
+
+                // Propagate wrap math so segments don't wander into offscreen infinity!
+                if (current.x < -200) current.x += spanX;
+                if (current.x > width + 200) current.x -= spanX;
+                if (current.y < -200) current.y += spanY;
+                if (current.y > height + 200) current.y -= spanY;
+
+                current.angle = angle;
+            }
+        }
+
+        function renderCanvas() {
+            ctx.clearRect(0, 0, width, height);
+
+            updateKinematics();
+
+            // Background Clouds
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+            ctx.font = "bold 80px 'Courier New', Courier, monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.globalAlpha = 0.05; // Faint, massive background elements
+            clouds.forEach(c => {
+                c.x += c.vx;
+                if (c.x > width + 400) c.x = -400;
+                c.art.forEach((line, index) => {
+                    ctx.fillText(line, c.x, c.y + (index * 60));
+                });
+            });
+
+            // Dragon rendering
+            const color = getDragonColor();
+            ctx.fillStyle = color;
+            ctx.font = "bold 9px 'Courier New', Courier, monospace";
+
+            const spanX = width + 400;
+            const spanY = height + 400;
+
+            // Draw back to front
+            for (let i = numSegments - 1; i >= 0; i--) {
+                let s = segments[i];
+                let char = dragonParts[i];
+                let alphas = Math.max(0.15, 1 - (i / numSegments) * 0.4);
+
+                const drawSegment = (x, y) => {
+                    ctx.save();
+                    ctx.translate(x, y);
+                    // Rotate by an additional 90 degrees (Math.PI/2) so that wide ASCII strings 
+                    // form the width/wings of the dragon naturally, instead of stacking vertically
+                    ctx.rotate(s.angle + Math.PI / 2);
+                    // Fade out towards tail, body stands out
+                    ctx.globalAlpha = alphas;
+                    ctx.fillText(char, 0, 0);
+                    ctx.restore();
+                };
+
+                // Normal Draw
+                drawSegment(s.x, s.y);
+
+                // Ghost draw for seamless screen edge overlap slicing
+                if (s.x < 200) drawSegment(s.x + spanX, s.y);
+                if (s.x > width - 200) drawSegment(s.x - spanX, s.y);
+                if (s.y < 200) drawSegment(s.x, s.y + spanY);
+                if (s.y > height - 200) drawSegment(s.x, s.y - spanY);
+            }
+
+            // Foreground Birds
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+            ctx.font = "14px 'Courier New', Courier, monospace";
+            ctx.globalAlpha = 0.6;
+
+            const birdFrames = ["_v_", "-v-", "^v^"];
+
+            birds.forEach(b => {
+                b.x += b.vx;
+                b.y += Math.sin(Date.now() / b.flapSpeed) * 0.5; // Flapping bob
+
+                if (b.x < -50) {
+                    b.x = width + 50;
+                    b.y = Math.random() * height;
+                }
+
+                let frameIndex = Math.floor(Date.now() / (b.flapSpeed * 1.5)) % 3;
+                ctx.fillText(birdFrames[frameIndex], b.x, b.y);
+            });
+
+            requestAnimationFrame(renderCanvas);
+        }
+
+        requestAnimationFrame(renderCanvas);
+    </script>
 </body>
 
 </html>
