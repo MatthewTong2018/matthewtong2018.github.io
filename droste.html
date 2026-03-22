@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Droste Effect Generator</title>
+    <link rel="stylesheet" href="droste.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Droste Effect Generator</h1>
+        </header>
+        <main>
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="upload" class="button">Upload Image</label>
+                    <input type="file" id="upload" accept="image/*">
+                </div>
+                <div class="control-group">
+                    <label for="zoom">Zoom Factor: <span id="view-zoom">1.00</span></label>
+                    <input type="range" id="zoom" min="-3" max="3" step="0.01" value="1">
+                </div>
+                <div class="control-group">
+                    <label for="twist">Twist: <span id="view-twist">0.00</span></label>
+                    <input type="range" id="twist" min="-5" max="5" step="0.01" value="0">
+                </div>
+                <div class="control-group">
+                    <button id="download" class="button">Download Image</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="droste.js"></script>
+</body>
+</html>
