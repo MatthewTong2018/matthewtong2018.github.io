@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Emotion Detector</title>
+    <meta name="description" content="A real-time facial expression and emotion detector using AI.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- Styles & Scripts -->
+    <link rel="stylesheet" href="emotion.css?v=4">
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script defer src="emotion.js"></script>
+</head>
+<body>
+    <div class="background-effects">
+        <div class="blob purple"></div>
+        <div class="blob blue"></div>
+    </div>
+    
+    <main class="container">
+        <header>
+            <h1>AI Emotion <span class="gradient-text">Detector</span></h1>
+            <p>Allow camera access to analyze your facial expressions in real-time.</p>
+            <a href="index.html" class="back-link">← Back to Portfolio</a>
+        </header>
+
+        <section class="detector-panel">
+            <div class="video-container" id="video-container">
+                <div class="loader" id="loader">
+                    <div class="spinner"></div>
+                    <p>Loading AI Models...</p>
+                </div>
+                <video id="video" width="480" height="360" autoplay muted playsinline></video>
+                <!-- Canvas will be injected here by JS -->
+            </div>
+            
+            <div class="results-panel">
+                <h2>Current Emotion</h2>
+                <div class="emotion-display" id="emotion-display">
+                    <span class="emoji" id="emotion-emoji">😐</span>
+                    <span class="text" id="emotion-text">Neutral</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill" style="width: 100%;"></div>
+                </div>
+                <p class="confidence-text">Confidence: <span id="confidence-value">100%</span></p>
+                
+                <div class="all-emotions" id="all-emotions">
+                    <!-- Dynamic list of all emotions -->
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
