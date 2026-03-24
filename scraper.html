@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="scraper.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="app-container">
+        <header>
+            <a href="index.html" style="position: fixed; top: 15px; left: 15px; background: rgba(0, 0, 0, 0.6); color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-family: sans-serif; font-weight: bold; font-size: 14px; z-index: 9999; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);" onmouseover="this.style.background='rgba(0,0,0,0.8)'" onmouseout="this.style.background='rgba(0,0,0,0.6)'">&larr; Back to Portfolio</a>
+            <div class="logo">🕸️ Web Scraper</div>
+            <p class="subtitle">Extract data from webpages.</p>
+        </header>
+
+        <main>
+            <section class="card control-panel">
+                <div class="tabs">
+                    <button class="tab-btn active" data-target="url-input">Fetch from URL</button>
+                    <button class="tab-btn" data-target="file-input">Upload HTML File</button>
+                </div>
+                
+                <div id="url-input" class="input-group active">
+                    <label>Target Web Address</label>
+                    <input type="url" id="targetUrl" placeholder="https://news.ycombinator.com" required>
+                    <p class="helper">Uses a proxy to bypass CORS.</p>
+                </div>
+
+                <div id="file-input" class="input-group">
+                    <label>Local HTML File</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="targetFile" accept=".html,.htm">
+                    </div>
+                </div>
+
+                <div class="query-builder">
+                    <label for="extractType">Data to Extract</label>
+                    <select id="extractType">
+                        <option value="contact-data">Emails, Phones, Social Profiles</option>
+                        <option value="media-links">Links, Contact Pages, Images</option>
+                        <option value="text-content">Text (Headings & Paragraphs)</option>
+                        <option value="metadata">SEO Metadata & Title</option>
+                    </select>
+                </div>
+
+                <button id="scrapeBtn" class="primary-btn">
+                    <span class="btn-text">Scrape</span>
+                    <span class="loader hidden"></span>
+                </button>
+            </section>
+
+            <section class="card results-card hidden" id="resultsSection">
+                <div class="results-header">
+                    <h3>Extracted Data <span class="badge" id="resultCount">0 items</span></h3>
+                    <button id="downloadBtn" class="secondary-btn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" class="icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Export JSON
+                    </button>
+                </div>
+                <div class="results-container" id="resultsContainer">
+                    <!-- Results populated dynamically here -->
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="scraper.js"></script>
+</body>
+</html>
