@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Kart F1</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --accent-color: #ff3e3e;
+            --text-color: #f0f0f0;
+            --panel-bg: rgba(20, 20, 25, 0.85);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 4px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 62, 62, 0.2);
+            overflow: hidden;
+            background: #000;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            image-rendering: pixelated;
+        }
+
+        #viewCanvas {
+            z-index: 1;
+        }
+
+        #hudCanvas {
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: var(--panel-bg);
+            border: 1px solid #444;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            z-index: 100;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+        }
+
+        .back-button:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .controls-hint {
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        kbd {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #fff;
+            border: 1px solid #555;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-button">&larr; Back to Portfolio</a>
+
+    <div id="game-container">
+        <canvas id="viewCanvas" width="800" height="600"></canvas>
+        <canvas id="hudCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <div class="controls-hint">
+        Use <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>Arrows</kbd> to drive.
+    </div>
+
+    <script>
+        const viewCanvas = document.getElementById('viewCanvas');
+        const viewCtx = viewCanvas.getContext('2d');
+        const hudCanvas = document.getElementById('hudCanvas');
+        const hudCtx = hudCanvas.getContext('2d');
+
+        const WIDTH = viewCanvas.width;
+        const HEIGHT = viewCanvas.height;
+        const HALF_HEIGHT = HEIGHT / 2;
+
+        const trackCanvas = document.createElement('canvas');
+        const trackCtx = trackCanvas.getContext('2d');
+
+        const gridCols = 64;
+        const gridRows = 64;
+        const gridMap = Array(gridRows).fill(0).map(() => Array(gridCols).fill(4));
+
+        function drawSmoothTrack() {
+            const trackWidth = 4.5;
+            const points = [];
+            for (let i = 0; i < 2000; i++) {
+                const t = (i / 2000) * Math.PI * 2;
+                const r = 25 + Math.sin(t * 2) * 5;
+                const x = 32 + Math.cos(t) * r;
+                const y = 32 + Math.sin(t) * r;
+                points.push([x, y]);
+            }
+
+            points.forEach(([x, y]) => {
+                const txBase = Math.floor(x);
+                const tyBase = Math.floor(y);
+                for (let dy = -6; dy <= 6; dy++) {
+                    for (let dx = -6; dx <= 6; dx++) {
+                        const tx = txBase + dx;
+                        const ty = tyBase + dy;
+                        if (ty >= 0 && ty < 64 && tx >= 0 && tx < 64) {
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist <= trackWidth) {
+                                gridMap[ty][tx] = 1;
+                            }
+                        }
+                    }
+                }
+            });
+
+            for (let y = 0; y < 64; y++) {
+                for (let x = 0; x < 64; x++) {
+                    if (gridMap[y][x] === 1) {
+                        let isEdge = false;
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const tx = x + dx;
+                                const ty = y + dy;
+                                if (ty >= 0 && ty < 64 && tx >= 0 && tx < 64 && gridMap[ty][tx] === 4) isEdge = true;
+                            }
+                        }
+                        if (isEdge) gridMap[y][x] = 2;
+                    }
+                }
+            }
+
+            for (let y = 31; y < 32; y++) {
+                for (let x = 52; x < 62; x++) {
+                    if (gridMap[y][x] === 1 || gridMap[y][x] === 2) gridMap[y][x] = 3;
+                }
+            }
+        }
+        drawSmoothTrack();
+
+        const worldRes = 64;
+        const cellRes = 32;
+        trackCanvas.width = gridCols * cellRes;
+        trackCanvas.height = gridRows * cellRes;
+        const mapResX = trackCanvas.width;
+        const mapResY = trackCanvas.height;
+
+        function createTrackTexture() {
+            trackCtx.fillStyle = '#111';
+            trackCtx.fillRect(0, 0, mapResX, mapResY);
+            for (let ty = 0; ty < gridRows; ty++) {
+                for (let tx = 0; tx < gridCols; tx++) {
+                    const cell = gridMap[ty][tx];
+                    if (cell === 4) continue;
+                    let color = '#333';
+                    if (cell === 2) color = '#ff3e3e';
+                    if (cell === 3) color = '#fff';
+                    trackCtx.fillStyle = color;
+                    trackCtx.fillRect(tx * cellRes, ty * cellRes, cellRes, cellRes);
+                    if (cell === 1) {
+                        for (let i = 0; i < 20; i++) {
+                            const nx = Math.random() * cellRes;
+                            const ny = Math.random() * cellRes;
+                            const cVal = 40 + Math.random() * 20;
+                            trackCtx.fillStyle = `rgb(${cVal}, ${cVal}, ${cVal})`;
+                            trackCtx.fillRect(tx * cellRes + nx, ty * cellRes + ny, 2, 1);
+                        }
+                        if (Math.random() > 0.8) {
+                            trackCtx.fillStyle = '#222';
+                            trackCtx.fillRect(tx * cellRes + Math.random() * 20, ty * cellRes, 4, cellRes);
+                        }
+                    }
+                    if (cell === 2) {
+                        trackCtx.fillStyle = '#fff';
+                        if ((tx + ty) % 2 === 0) trackCtx.fillRect(tx * cellRes, ty * cellRes, cellRes, cellRes);
+                    }
+                    if (cell === 3) {
+                        trackCtx.fillStyle = '#000';
+                        const qs = cellRes / 4;
+                        for (let cy = 0; cy < 4; cy++) {
+                            for (let cx = 0; cx < 4; cx++) {
+                                if ((cx + cy) % 2 === 0) {
+                                    trackCtx.fillRect(tx * cellRes + cx * qs, ty * cellRes + cy * qs, qs, qs);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        createTrackTexture();
+
+        const spawnX = 57;
+        const spawnY = 35;
+        const player = {
+            x: spawnX * worldRes,
+            y: spawnY * worldRes,
+            angle: -Math.PI / 2,
+            speed: 0,
+            maxSpeed: 15,
+            accel: 0.14,
+            decel: 1.5,
+            friction: 0.05,
+            turnSpeed: 0.015
+        };
+
+        const gameState = {
+            startTime: 0,
+            currentTime: 0,
+            bestTime: Infinity,
+            laps: 0,
+            totalLaps: 3,
+            state: 'START',
+            countdown: 3,
+            countdownTimer: 0,
+            passedCheckpoint: false
+        };
+
+        const keys = {};
+        window.onkeydown = e => {
+            keys[e.key.toLowerCase()] = true;
+            if ((gameState.state === 'START' || gameState.state === 'FINISH') && e.key === ' ') {
+                resetRace();
+                startRace();
+            }
+        };
+        window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+
+        function resetRace() {
+            player.x = spawnX * worldRes;
+            player.y = spawnY * worldRes;
+            player.angle = -Math.PI / 2;
+            player.speed = 0;
+            gameState.laps = 0;
+            gameState.currentTime = 0;
+            gameState.passedCheckpoint = false;
+        }
+
+        function startRace() {
+            gameState.state = 'COUNTDOWN';
+            gameState.countdown = 3;
+            gameState.countdownTimer = performance.now();
+        }
+
+        const offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = WIDTH;
+        offscreenCanvas.height = HEIGHT;
+        const offscreenCtx = offscreenCanvas.getContext('2d');
+        const imageData = offscreenCtx.createImageData(WIDTH, HEIGHT);
+        const pixels = new Uint32Array(imageData.data.buffer);
+
+        const textureData = trackCtx.getImageData(0, 0, mapResX, mapResY);
+        const texturePixels = new Uint32Array(textureData.data.buffer);
+
+        let lastTime = performance.now();
+
+        function update(now) {
+            const dt = Math.min(2, (now - lastTime) / 16.666);
+            lastTime = now;
+
+            if (gameState.state === 'COUNTDOWN') {
+                const elapsed = (now - gameState.countdownTimer) / 1000;
+                if (elapsed > 1) {
+                    gameState.countdown--;
+                    gameState.countdownTimer = now;
+                    if (gameState.countdown < 0) {
+                        gameState.state = 'RACING';
+                        gameState.startTime = now;
+                    }
+                }
+                return;
+            }
+
+            if (gameState.state !== 'RACING') return;
+
+            gameState.currentTime = (now - gameState.startTime) / 1000;
+
+            const oldX = player.x;
+            const oldY = player.y;
+
+            const currentTurnSpeed = player.turnSpeed * dt * (Math.abs(player.speed) / player.maxSpeed + 0.15);
+            if (keys['a'] || keys['arrowleft']) player.angle -= currentTurnSpeed;
+            if (keys['d'] || keys['arrowright']) player.angle += currentTurnSpeed;
+
+            if (keys['w'] || keys['arrowup']) {
+                player.speed += player.accel * dt;
+            } else if (keys['s'] || keys['arrowdown']) {
+                player.speed -= player.decel * dt;
+            } else {
+                if (player.speed > 0) player.speed -= player.friction * dt;
+                if (player.speed < 0) player.speed += player.friction * dt;
+                if (Math.abs(player.speed) < 0.1) player.speed = 0;
+            }
+
+            player.speed = Math.max(-3, Math.min(player.speed, player.maxSpeed));
+
+            player.x += Math.cos(player.angle) * player.speed * dt;
+            player.y += Math.sin(player.angle) * player.speed * dt;
+
+            const gridX = Math.floor(player.x / worldRes);
+            const gridY = Math.floor(player.y / worldRes);
+            const cell = (gridX >= 0 && gridX < gridCols && gridY >= 0 && gridY < gridRows)
+                ? gridMap[gridY][gridX] : 4;
+
+            if (cell === 4) {
+                player.speed *= -0.4;
+                player.x = oldX;
+                player.y = oldY;
+            }
+
+            if (gridX < 15) gameState.passedCheckpoint = true;
+
+            const oldGridY = Math.floor(oldY / worldRes);
+            if (gameState.passedCheckpoint && oldGridY >= 31 && gridY < 31) {
+                gameState.laps++;
+                gameState.passedCheckpoint = false;
+                if (gameState.laps >= gameState.totalLaps) {
+                    gameState.state = 'FINISH';
+                    if (gameState.currentTime < gameState.bestTime) {
+                        gameState.bestTime = gameState.currentTime;
+                    }
+                }
+            }
+        }
+
+        function drawMiniMap() {
+            const size = 3;
+            const pad = 20;
+            hudCtx.save();
+            hudCtx.translate(pad, HEIGHT - (gridRows * size) - pad);
+            hudCtx.globalAlpha = 0.5;
+            for (let y = 0; y < gridRows; y++) {
+                for (let x = 0; x < gridCols; x++) {
+                    const cell = gridMap[y][x];
+                    if (cell === 4) continue;
+                    hudCtx.fillStyle = (cell === 1) ? '#555' : (cell === 2) ? '#ff3e3e' : '#fff';
+                    hudCtx.fillRect(x * size, y * size, size, size);
+                }
+            }
+            const px = (player.x / (gridCols * worldRes)) * (gridCols * size);
+            const py = (player.y / (gridRows * worldRes)) * (gridRows * size);
+            hudCtx.globalAlpha = 1;
+            hudCtx.fillStyle = '#00ffcc';
+            hudCtx.beginPath();
+            hudCtx.arc(px, py, 2.5, 0, Math.PI * 2);
+            hudCtx.fill();
+            hudCtx.restore();
+        }
+
+        function render() {
+            const cosA = Math.cos(player.angle);
+            const sinA = Math.sin(player.angle);
+            const cameraHeight = 50;
+            const horizon = HALF_HEIGHT;
+            const FOV = 0.8;
+
+            const skyGrad = viewCtx.createLinearGradient(0, 0, 0, horizon);
+            skyGrad.addColorStop(0, '#000000');
+            skyGrad.addColorStop(1, '#1a1a2e');
+            viewCtx.fillStyle = skyGrad;
+            viewCtx.fillRect(0, 0, WIDTH, horizon);
+
+            viewCtx.fillStyle = '#0f0f1a';
+            const skyOffset = (player.angle * 200) % WIDTH;
+            for (let i = -1; i <= 1; i++) {
+                const mtX = i * WIDTH - skyOffset;
+                viewCtx.beginPath();
+                viewCtx.moveTo(mtX, horizon);
+                viewCtx.lineTo(mtX + 150, horizon - 60);
+                viewCtx.lineTo(mtX + 300, horizon);
+                viewCtx.lineTo(mtX + 450, horizon - 80);
+                viewCtx.lineTo(mtX + 600, horizon);
+                viewCtx.fill();
+            }
+
+            pixels.fill(0xFF1a1a1a);
+            const worldMapSizeX = gridCols * worldRes;
+            const worldMapSizeY = gridRows * worldRes;
+            const texScaleX = mapResX / worldMapSizeX;
+            const texScaleY = mapResY / worldMapSizeY;
+
+            for (let y = horizon; y < HEIGHT; y++) {
+                const p = y - horizon;
+                if (p === 0) continue;
+                const distance = (cameraHeight * HEIGHT) / p;
+                if (distance > 1100) continue;
+                const horizontalScale = (distance * FOV) / WIDTH;
+                const stepX = -sinA * horizontalScale;
+                const stepY = cosA * horizontalScale;
+                let worldX = player.x + (distance * cosA) - (WIDTH / 2) * stepX;
+                let worldY = player.y + (distance * sinA) - (WIDTH / 2) * stepY;
+                const rowStart = y * WIDTH;
+                const shade = Math.min(1, 650 / distance);
+                for (let i = 0; i < WIDTH; i++) {
+                    const tx = ((worldX * texScaleX) | 0) % mapResX;
+                    const ty = ((worldY * texScaleY) | 0) % mapResY;
+                    if (worldX >= 0 && worldX < worldMapSizeX && worldY >= 0 && worldY < worldMapSizeY) {
+                        let color = texturePixels[((ty + mapResY) % mapResY) * mapResX + ((tx + mapResX) % mapResX)];
+                        if (shade < 1) {
+                            const r = (color & 0xFF) * shade;
+                            const g = ((color >> 8) & 0xFF) * shade;
+                            const b = ((color >> 16) & 0xFF) * shade;
+                            color = 0xFF000000 | (b << 16) | (g << 8) | r;
+                        }
+                        pixels[rowStart + i] = color;
+                    }
+                    worldX += stepX;
+                    worldY += stepY;
+                }
+            }
+            offscreenCtx.putImageData(imageData, 0, 0);
+            viewCtx.drawImage(offscreenCanvas, 0, 0);
+            renderWalls(cosA, sinA, FOV);
+            drawHUD();
+        }
+
+        function renderWalls(cosA, sinA, fov) {
+            const numRays = 160;
+            const stripWidth = WIDTH / numRays;
+            for (let i = 0; i < numRays; i++) {
+                const rayAngle = player.angle - (fov / 2) + ((i / numRays) * fov);
+                const rayDirX = Math.cos(rayAngle);
+                const rayDirY = Math.sin(rayAngle);
+                let mapX = Math.floor(player.x / worldRes);
+                let mapY = Math.floor(player.y / worldRes);
+                const deltaDistX = Math.abs(1 / rayDirX);
+                const deltaDistY = Math.abs(1 / rayDirY);
+                let stepX, stepY, sideDistX, sideDistY, hit = 0, side;
+                if (rayDirX < 0) { stepX = -1; sideDistX = (player.x / worldRes - mapX) * deltaDistX; }
+                else { stepX = 1; sideDistX = (mapX + 1.0 - player.x / worldRes) * deltaDistX; }
+                if (rayDirY < 0) { stepY = -1; sideDistY = (player.y / worldRes - mapY) * deltaDistY; }
+                else { stepY = 1; sideDistY = (mapY + 1.0 - player.y / worldRes) * deltaDistY; }
+                let depth = 0;
+                while (hit === 0 && depth < 35) {
+                    if (sideDistX < sideDistY) { sideDistX += deltaDistX; mapX += stepX; side = 0; }
+                    else { sideDistY += deltaDistY; mapY += stepY; side = 1; }
+                    if (mapX < 0 || mapX >= gridCols || mapY < 0 || mapY >= gridRows || gridMap[mapY][mapX] === 4) hit = 1;
+                    depth++;
+                }
+                if (hit) {
+                    let perpWallDist = side === 0 ? (mapX - player.x / worldRes + (1 - stepX) / 2) / rayDirX : (mapY - player.y / worldRes + (1 - stepY) / 2) / rayDirY;
+                    perpWallDist *= Math.cos(rayAngle - player.angle);
+                    if (perpWallDist < 0.1) perpWallDist = 0.1;
+                    const wallHeight = HEIGHT / perpWallDist;
+                    const drawStart = HALF_HEIGHT - wallHeight / 2;
+                    const shade = Math.min(1, 6 / perpWallDist);
+                    viewCtx.fillStyle = `rgb(${26 * shade}, ${26 * shade}, ${36 * shade})`;
+                    viewCtx.fillRect(i * stripWidth, drawStart, stripWidth + 1, wallHeight);
+                }
+            }
+        }
+
+        function drawHUD() {
+            hudCtx.clearRect(0, 0, WIDTH, HEIGHT);
+            hudCtx.shadowBlur = 10;
+            hudCtx.shadowColor = 'rgba(255, 62, 62, 0.5)';
+            hudCtx.fillStyle = '#fff';
+            hudCtx.font = 'bold 32px "Courier New"';
+            hudCtx.textAlign = 'right';
+            const speedKmh = Math.abs(Math.round(player.speed * 20));
+            hudCtx.fillText(`${speedKmh}`, WIDTH - 50, HEIGHT - 50);
+            hudCtx.font = '14px "Courier New"';
+            hudCtx.fillText(`KM/H`, WIDTH - 50, HEIGHT - 30);
+            hudCtx.textAlign = 'left';
+            hudCtx.font = '20px "Courier New"';
+            hudCtx.fillText(`TIME: ${gameState.currentTime.toFixed(2)}`, 30, 60);
+            hudCtx.fillText(`LAP: ${Math.min(gameState.laps + 1, gameState.totalLaps)} / ${gameState.totalLaps}`, 30, 90);
+            if (gameState.bestTime !== Infinity) {
+                hudCtx.fillStyle = '#ffea00';
+                hudCtx.fillText(`BEST: ${gameState.bestTime.toFixed(2)}`, 30, 120);
+            }
+            hudCtx.textAlign = 'center';
+            if (gameState.state === 'START') {
+                hudCtx.fillStyle = '#fff';
+                hudCtx.font = '30px "Courier New"';
+                hudCtx.fillText('PRESS [SPACE] TO START', WIDTH / 2, HEIGHT / 2);
+            } else if (gameState.state === 'COUNTDOWN') {
+                hudCtx.fillStyle = '#ff3e3e';
+                hudCtx.font = 'bold 80px "Courier New"';
+                hudCtx.fillText(gameState.countdown > 0 ? gameState.countdown : 'GO!', WIDTH / 2, HEIGHT / 2);
+            } else if (gameState.state === 'FINISH') {
+                hudCtx.fillStyle = '#ffea00';
+                hudCtx.font = 'bold 60px "Courier New"';
+                hudCtx.fillText('FINISH!', WIDTH / 2, HEIGHT / 2);
+                hudCtx.font = '24px "Courier New"';
+                hudCtx.fillText(`FINAL TIME: ${gameState.currentTime.toFixed(2)}`, WIDTH / 2, HEIGHT / 2 + 60);
+                hudCtx.font = '20px "Courier New"';
+                hudCtx.fillText('PRESS [SPACE] TO RESTART', WIDTH / 2, HEIGHT / 2 + 100);
+            }
+            hudCtx.save();
+            hudCtx.translate(WIDTH / 2, HEIGHT - 90);
+            let lean = 0;
+            if (keys['a'] || keys['arrowleft']) lean = -0.15;
+            if (keys['d'] || keys['arrowright']) lean = 0.15;
+            hudCtx.rotate(lean);
+            const shake = (Math.random() - 0.5) * (player.speed / 2);
+            hudCtx.translate(shake, shake);
+            hudCtx.fillStyle = '#ff3e3e';
+            hudCtx.fillRect(-45, -25, 90, 8);
+            hudCtx.fillStyle = '#111';
+            hudCtx.fillRect(-45, -25, 5, 20); hudCtx.fillRect(40, -25, 5, 20);
+            hudCtx.fillStyle = '#111';
+            hudCtx.fillRect(-55, 10, 20, 35); hudCtx.fillRect(35, 10, 20, 35);
+            hudCtx.fillStyle = '#cc0000';
+            hudCtx.fillRect(-35, 15, 70, 25);
+            hudCtx.fillStyle = '#ff3e3e';
+            hudCtx.beginPath();
+            hudCtx.moveTo(-15, 35); hudCtx.lineTo(15, 35);
+            hudCtx.lineTo(12, -10); hudCtx.lineTo(-12, -10);
+            hudCtx.closePath(); hudCtx.fill();
+            hudCtx.fillStyle = '#333';
+            hudCtx.fillRect(-2, -25, 4, 30);
+            hudCtx.fillStyle = '#fff';
+            hudCtx.fillRect(-10, 5, 4, 15); hudCtx.fillRect(6, 5, 4, 15);
+            hudCtx.fillStyle = '#cc0000';
+            hudCtx.fillRect(-6, -20, 12, 10);
+            hudCtx.fillStyle = '#fff';
+            hudCtx.beginPath(); hudCtx.arc(0, -8, 6, 0, Math.PI * 2); hudCtx.fill();
+            hudCtx.fillStyle = '#333';
+            hudCtx.fillRect(-4, -10, 8, 3);
+            if (Math.floor(Date.now() / 200) % 2 === 0) {
+                hudCtx.fillStyle = '#ff0000';
+                hudCtx.shadowBlur = 10;
+                hudCtx.shadowColor = '#ff0000';
+                hudCtx.fillRect(-3, 25, 6, 6);
+                hudCtx.shadowBlur = 0;
+            }
+            hudCtx.restore();
+            drawMiniMap();
+        }
+
+        function loop(now) {
+            update(now);
+            render();
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    </script>
+</body>
+
+</html>
