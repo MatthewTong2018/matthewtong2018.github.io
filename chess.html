@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess</title>
+    <meta name="description" content="Chess with stockfish engine analysis. Inspired by both lichess and chess.com">
+    <link rel="stylesheet" href="chess.css">
+    <link rel="stylesheet" href="lib/cm-chessboard/assets/chessboard.css">
+</head>
+<body>
+    <a href="index.html" style="position: fixed; top: 15px; left: 15px; background: rgba(0, 0, 0, 0.6); color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-family: sans-serif; font-weight: bold; font-size: 14px; z-index: 9999; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);" onmouseover="this.style.background='rgba(0,0,0,0.8)'" onmouseout="this.style.background='rgba(0,0,0,0.6)'">&larr; Back to Portfolio</a>
+
+    <main>
+        <div class="eval-wrapper">
+            <div id="eval-bar"></div>
+            <div class="eval-score" id="eval-score">0.0</div>
+        </div>
+
+        <div class="board-container">
+            <div id="board"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <h3>Captured</h3>
+                <div class="captured-pieces" id="captured-white"></div>
+                <div class="captured-pieces" id="captured-black"></div>
+            </div>
+
+            <div class="panel status-panel">
+                <h3>Status</h3>
+                <div class="status-badge" id="game-status">White to move</div>
+            </div>
+
+            <div class="panel">
+                <div class="toggle-container">
+                    <span>Analysis</span>
+                    <label class="switch">
+                        <input type="checkbox" id="engine-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="engine-info" style="font-size: 0.8rem; display: none; margin-bottom: 0.5rem;">
+                    Best move: <span id="best-move-text" style="color: var(--accent); font-weight: bold;">-</span>
+                </div>
+                <div class="controls">
+                    <button class="btn-primary" id="reset-btn">Reset</button>
+                    <button class="btn-secondary" id="flip-btn">Flip</button>
+                </div>
+            </div>
+
+            <div class="panel history-container">
+                <h3>History</h3>
+                <div class="history-list" id="move-history"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="promotion-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="promotion-options">
+                <div class="promo-option" data-piece="q">♛</div>
+                <div class="promo-option" data-piece="r">♜</div>
+                <div class="promo-option" data-piece="b">♝</div>
+                <div class="promo-option" data-piece="n">♞</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="chess.js"></script>
+</body>
+</html>
